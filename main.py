@@ -30,13 +30,13 @@ def get_but(text, color):
         "color": f"{color}"
     }
 
-
-
+object1 = con.cursor()
+object2 = con.cursor()
 def main():
     InputLogin = False
     InputPassword = False
     AllRight = False
-
+    MarkRight = False
 
     for event in longpoll.listen():
         if event.type == VkBotEventType.MESSAGE_NEW and InputLogin==False:
@@ -81,73 +81,73 @@ def main():
 
             if (event.obj.text == "оценить/написать отзыв"):
 
+                object1.execute("""SELECT course_name FROM courses WHERE course_id IN  (SELECT course_id from student_course
+                WHERE student_id IN (SELECT student_id from student where login = %s and password = %s ));""", (listLogPas[0],listLogPas[1]))
+                ObjectRows = object1.fetchall()
+
+                keyboardObjects = {
+                    "one_time": False,
+                    "buttons": [
+                        [get_but(*ObjectRows[0], 'primary'), get_but(*ObjectRows[1], 'primary')],
+                        [get_but('-', 'primary'), get_but('-', 'primary')]
+                    ]
+                }
+                keyboardObjects = json.dumps(keyboardObjects, ensure_ascii=False).encode('utf-8')
+                keyboardObjects = str(keyboardObjects.decode('utf-8'))
+
                 vk.messages.send(
-
                     user_id=event.obj.from_id,
-
                     random_id=get_random_id(),
-
                     message=("Выбирай предмет"),
-
                     keyboard=keyboardObjects,
                 )
 
-
-
-            elif (event.obj.text == "оценить онлайн-курс"):
+            elif (event.obj.text == ObjectRows[0][0] or event.obj.text == ObjectRows[1][0]) and MarkRight == False:
+                ObjectName = event.obj.text
 
                 vk.messages.send(
-
                     user_id=event.obj.from_id,
-
                     random_id=get_random_id(),
+                    message=("Введите оценку от 1 до 10"),
+                    MarkRight = True
+                )
 
+            elif int(event.obj.text) > 0 and int(event.obj.text) <= 7:
+                print(type(int(event.obj.text)), ObjectName)
+                object2.execute("UPDATE `new_schema`.`courses` SET `course_mark` = %s WHERE (`course_name` = %s);",(int(event.obj.text), ObjectName))
+
+            elif (event.obj.text == "оценить онлайн-курс"):
+                vk.messages.send(
+                    user_id=event.obj.from_id,
+                    random_id=get_random_id(),
                     message=("Выбирай онлайн-курс"),
-
                     keyboard=emptyKeyboard,
-
                 )
 
             elif (event.obj.text == "посмотреть оценку/отзыв"):
-
                 vk.messages.send(
-
                     user_id=event.obj.from_id,
-
                     random_id=get_random_id(),
-
                     message=("Смотри оценку/отзыв"),
-
                     keyboard=emptyKeyboard,
-
                 )
 
             elif (event.obj.text == "оценить куратора пп"):
-
                 vk.messages.send(
-
                     user_id=event.obj.from_id,
-
                     random_id=get_random_id(),
-
                     message=("Выбирай куратора"),
-
                     keyboard=emptyKeyboard,
-
                 )
             elif (event.obj.text == "Предмет1"):  # ВТОРОЙ БЛОК КНОПОК
-
                 vk.messages.send(
-
                     user_id=event.obj.from_id,
-
                     random_id=get_random_id(),
-
                     message=("смотри инфу по предмет1"),
-
                     keyboard=emptyKeyboard,
-
                 )
+
+
 emptyKeyboard = {
     "one_time": False,
     "buttons": [
@@ -162,31 +162,11 @@ keyboard = {
     ]
 }
 
-
-
-object1 = con.cursor()
-object1.execute("""SELECT course_name FROM courses WHERE course_id IN  (SELECT course_id from student_course
-WHERE student_id IN (SELECT student_id from student where login = %s and password = %s));""", (listLogPas[0], listLogPas[1]))
-ObjectRows = object1.fetchall()
-
-
-
-keyboardObjects = {
-    "one_time": False,
-    "buttons": [
-        [get_but(*ObjectRows[0], 'primary'), get_but(*ObjectRows[1], 'primary')],
-        [get_but('-', 'primary'), get_but('-', 'primary')]
-    ]
-}
-
 keyboard = json.dumps(keyboard, ensure_ascii=False).encode('utf-8')
 keyboard = str(keyboard.decode('utf-8'))
-
 
 emptyKeyboard = json.dumps(emptyKeyboard, ensure_ascii=False).encode('utf-8')
 emptyKeyboard = str(emptyKeyboard.decode('utf-8'))
 
-keyboardObjects = json.dumps(keyboardObjects, ensure_ascii=False).encode('utf-8')
-keyboardObjects = str(keyboardObjects.decode('utf-8'))
 if __name__ == '__main__':
     main()
